@@ -16,10 +16,21 @@ variable "azs" {
   default = ["us-east-1a"]  
 }
 
-# variable "ubuntu-ami" {
-#   type        = string
-#   default     = ""
-#   description = "aws AMI for ubunto server"
-# }
+variable "ssh-private-key-path" {
+  type        = string
+  default     = "~/Desktop/DEVOPS/keys/ansible-filecoin.pem"
+  description = "Path to private key for ansible connection"
+}
 
+variable ssh-user {
+  type        = string
+  default     = "ubuntu"
+  description = "description"
+}
+
+variable key-name {
+  type        = string
+  default     = "ansible-filecoin"
+  description = "description"
+}
 

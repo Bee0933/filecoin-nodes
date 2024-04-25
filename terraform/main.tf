@@ -1,24 +1,9 @@
 
-
-# key pair for SSH
-resource "aws_key_pair" "my-key-pair" {
-  key_name   = "my-key-pair"
-  public_key = file("~/.ssh/id_rsa.pub")
-}
-
-
 resource "aws_instance" "forest-instance" {
   ami           = "ami-080e1f13689e07408" # use Ubuntu AMI
   instance_type = "t3.large"
   subnet_id     = module.vpc.public_subnets[0]
-  key_name      = aws_key_pair.my-key-pair.key_name
-
-  # hello world oin port 80
-  user_data = <<-EOF
-    #!/bin/bash
-    echo "Hello, World!" > index.html
-    nohup busybox httpd -f -p 80 &
-    EOF
+  key_name      = var.key-name
 
   tags = {
     Name = "forest-instance"
@@ -36,15 +21,9 @@ resource "aws_instance" "forest-instance" {
 
 resource "aws_instance" "lotus-instance" {
   ami           = "ami-080e1f13689e07408"
-  instance_type = "t3.2xlarge"
+  instance_type = "t3.large"
   subnet_id     = module.vpc.public_subnets[0]
-  key_name      = aws_key_pair.my-key-pair.key_name
-
-  user_data = <<-EOF
-    #!/bin/bash
-    echo "Hello, World!" > index.html
-    nohup busybox httpd -f -p 80 &
-    EOF
+  key_name      = var.key-name
 
   tags = {
     Name = "lotus-instance"
@@ -64,13 +43,7 @@ resource "aws_instance" "monitoring-instance" {
   ami           = "ami-080e1f13689e07408"
   instance_type = "t3.large"
   subnet_id     = module.vpc.public_subnets[1]
-  key_name      = aws_key_pair.my-key-pair.key_name
-
-  user_data = <<-EOF
-    #!/bin/bash
-    echo "Hello, World!" > index.html
-    nohup busybox httpd -f -p 80 &
-    EOF
+  key_name      = var.key-name
 
   tags = {
     Name = "monitoring-instance"
@@ -96,13 +69,12 @@ resource "aws_s3_bucket" "fil-monitoring-s3-bucket" {
 }
 
 
-
 # Nginx Reverse Proxy Instance
 resource "aws_instance" "nginx-instance" {
   ami                = "ami-080e1f13689e07408"
   instance_type      = "t3.micro"
   subnet_id          = module.vpc.public_subnets[1]
-  key_name      = aws_key_pair.my-key-pair.key_name
+  key_name      = var.key-name
 
   tags = {
     Name = "nginx-instance"
@@ -115,5 +87,26 @@ resource "aws_instance" "nginx-instance" {
   }
 
   vpc_security_group_ids = [aws_security_group.monitoring-public-sn-sg.id]
+
+}
+
+
+# ansible installs
+resource "null_resource" "configure-servers" {
+  provisioner "remote-exec" {
+    inline = ["echo 'Wait until SSH is ready'"]
+
+    connection {
+      type        = "ssh"
+      user        = var.ssh-user
+      private_key = file(var.ssh-private-key-path)
+      host        = aws_instance.forest-instance.public_ip
+    }
+  }
+
+  provisioner "local-exec" {
+    working_dir = "../ansible"
+    command = "ansible-playbook  --inventory ${aws_instance.forest-instance.public_ip}, --private-key ${var.ssh-private-key-path} --user ubuntu  forest_setup.yaml --extra-vars 'loki_address=${aws_instance.monitoring-instance.public_ip}'"
+  }
 
 }

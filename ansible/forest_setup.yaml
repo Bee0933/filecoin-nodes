@@ -1,0 +1,122 @@
+---
+- name: Install Docker and run Forest container
+  hosts: all
+  become: yes
+  tasks:
+    - name: Install required packages for Docker
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - gnupg-agent
+        - software-properties-common
+
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable
+        state: present
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install Docker
+      apt:
+        name: docker-ce
+        state: present
+
+    - name: Add user to the docker group
+      user:
+        name: "{{ ansible_ssh_user }}"
+        groups: docker
+        append: yes
+
+- name: Install pip3 on Debian-based systems
+  hosts: all
+  become: yes
+  tasks:
+    - name: Install Python 3 pip package manager
+      apt:
+        name: python3-pip
+        state: present
+
+- name: Install Docker SDK for Python
+  hosts: all
+  become: yes
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+  tasks:
+    - name: Install Docker SDK for Python using pip
+      pip:
+        name: docker
+        state: present
+
+
+- name: Install Forest container
+  hosts: all
+  become: yes
+  tasks:
+    - name: Start Forest container
+      docker_container:
+        name: forest
+        image: ghcr.io/chainsafe/forest:latest
+        state: started
+        detach: yes
+        init: yes
+        auto_remove: no
+        command: "--chain calibnet --auto-download-snapshot --encrypt-keystore false"
+
+- name: Deploy node_exporter container
+  hosts: all
+  become: yes
+  tasks:
+    - name: Run node_exporter container
+      docker_container:
+        name: node_exporter
+        image: quay.io/prometheus/node-exporter:latest
+        command: "--path.rootfs=/host"
+        network_mode: host
+        pid_mode: host
+        restart_policy: unless-stopped
+        volumes:
+          - "/:/host:ro,rslave"
+
+
+- name: Install Promptail using Docker
+  hosts: all
+  become: yes
+  tasks:
+    - name: Pull Promptail Docker image
+      docker_image:
+        name: grafana/promtail:main
+        source: pull
+
+    - name: Run Promptail container
+      docker_container:
+        name: promptail
+        image: grafana/promtail:main
+        state: started
+        restart_policy: always
+        env:
+          CLIENT_URL: "{{ loki_address }}"
+
+
+- name: Execute forest-cli net peers command in Docker container
+  hosts: all
+  become: yes
+  tasks:
+    - name: Execute command in Docker container
+      command: docker exec -it forest forest-cli net peers
+      register: command_output
+      
+    - name: Display command output
+      debug:
+        msg: "{{ command_output.stdout }}"
