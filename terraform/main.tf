@@ -20,8 +20,9 @@ resource "aws_instance" "forest-instance" {
 }
 
 resource "aws_instance" "lotus-instance" {
-  ami           = "ami-080e1f13689e07408"
-  instance_type = "t3.large"
+  ami           = "ami-0eac975a54dfee8cb" # use ubuntu arm 
+  instance_type = "t4g.2xlarge"
+  # availability_zone = "us-east-1b"
   subnet_id     = module.vpc.public_subnets[0]
   key_name      = var.key-name
 
@@ -30,7 +31,7 @@ resource "aws_instance" "lotus-instance" {
   }
 
   root_block_device {
-    volume_type           = "gp2"
+    volume_type           = "gp3"
     volume_size           = 512 # 512 GiB SSD
     delete_on_termination = true
   }
@@ -93,6 +94,7 @@ resource "aws_instance" "nginx-instance" {
 
 # ansible installs
 resource "null_resource" "configure-servers" {
+  # forest instance
   provisioner "remote-exec" {
     inline = ["echo 'Wait until SSH is ready'"]
 
@@ -109,4 +111,23 @@ resource "null_resource" "configure-servers" {
     command = "ansible-playbook  --inventory ${aws_instance.forest-instance.public_ip}, --private-key ${var.ssh-private-key-path} --user ubuntu  forest_setup.yaml --extra-vars 'loki_address=${aws_instance.monitoring-instance.public_ip}'"
   }
 
+  # lotus instance
+  provisioner "remote-exec" {
+    inline = ["echo 'Wait until SSH is ready'"]
+
+    connection {
+      type        = "ssh"
+      user        = var.ssh-user
+      private_key = file(var.ssh-private-key-path)
+      host        = aws_instance.lotus-instance.public_ip
+    }
+  }
+
+  provisioner "local-exec" {
+    working_dir = "../ansible"
+    command = "ansible-playbook  --inventory ${aws_instance.lotus-instance.public_ip}, --private-key ${var.ssh-private-key-path} --user ubuntu  lotus_setup.yaml --extra-vars 'loki_address=${aws_instance.monitoring-instance.public_ip}'"
+  }
+
 }
+
+

@@ -1,5 +1,5 @@
 ---
-- name: Install Docker and run Forest container
+- name: Install Docker for Forest instance
   hosts: all
   become: yes
   tasks:
@@ -112,6 +112,8 @@
 - name: Execute forest-cli net peers command in Docker container
   hosts: all
   become: yes
+  vars:
+    ansible_connection_timeout: 120
   tasks:
     - name: Execute command in Docker container
       command: docker exec -it forest forest-cli net peers

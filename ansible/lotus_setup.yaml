@@ -1,0 +1,122 @@
+---
+- name: Install Docker
+  hosts: all
+  become: yes
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Add Docker GPG key
+      shell: curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+      
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb [arch=arm64] https://download.docker.com/linux/ubuntu focal stable"
+        state: present
+
+    - name: Install prerequisite packages
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - software-properties-common
+        - python3-pip
+        - python3-setuptools
+
+    - name: Install Docker CE
+      apt:
+        name: docker-ce
+        state: present
+        update_cache: yes
+
+    
+
+    - name: Add user to Docker group
+      user:
+        name: "{{ ansible_ssh_user }}"
+        groups: docker
+        append: yes
+
+
+   
+- name: Run Lotus Docker container (calibnet)
+  hosts: all
+  become: yes
+  tasks:
+    - name: Run Lotus Docker container
+      docker_container:
+        name: lotus
+        image: glif/lotus:v1.26.0-rc2-gw-calibnet-arm64
+        state: started
+        detach: yes
+        ports:
+          - "1234:1234"
+          - "1235:1235"
+        volumes:
+          - "{{ ansible_env.HOME }}/lotus:/{{ ansible_env.HOME }}/lotus_user"
+        env:
+          INFRA_CLEAR_RESTART: "false"
+          INFRA_LOTUS_DAEMON: "true"
+          INFRA_LOTUS_GATEWAY: "true"
+          INFRA_PERSISTNODEID: "false"
+          INFRA_SECRETVOLUME: "false"
+          INFRA_SYNC: "true"
+          INFRA_LOTUS_HOME: "/home/lotus_user"
+          INFRA_IMPORT_SNAPSHOT: "true"
+          SNAPSHOTURL: "https://snapshots.calibrationnet.filops.net/minimal/latest.zst"
+
+    - name: Execute Lotus Daemon 
+      command: docker exec lotus sh -c 'nohup lotus daemon > /home/lotus_user/lotus.log 2>&1 &'
+
+
+- name: Execute Loutus cli net peers command in Docker container
+  hosts: all
+  become: yes
+  tasks:
+    - name: Execute command in Docker container
+      command: docker exec -it lotus lotus net peers
+      register: command_output
+      
+    - name: Display command output
+      debug:
+        msg: "{{ command_output.stdout }}"
+
+
+- name: Deploy node_exporter container
+  hosts: all
+  become: yes
+  tasks:
+    - name: Run node_exporter container
+      docker_container:
+        name: node_exporter
+        image: quay.io/prometheus/node-exporter:latest
+        command: "--path.rootfs=/host"
+        network_mode: host
+        pid_mode: host
+        restart_policy: unless-stopped
+        volumes:
+          - "/:/host:ro,rslave"
+
+
+- name: Install Promptail using Docker
+  hosts: all
+  become: yes
+  tasks:
+    - name: Pull Promptail Docker image
+      docker_image:
+        name: grafana/promtail:main
+        source: pull
+
+    - name: Run Promptail container
+      docker_container:
+        name: promptail
+        image: grafana/promtail:main
+        state: started
+        restart_policy: always
+        env:
+          CLIENT_URL: "{{ loki_address }}"
