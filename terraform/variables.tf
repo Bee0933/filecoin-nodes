@@ -18,7 +18,7 @@ variable "azs" {
 
 variable "ssh-private-key-path" {
   type        = string
-  default     = "~/Desktop/DEVOPS/keys/ansible-filecoin.pem"
+  default     = ""
   description = "Path to private key for ansible connection"
 }
 
@@ -34,3 +34,8 @@ variable key-name {
   description = "description"
 }
 
+variable slack-webhook {
+  type        = string
+  default     = ""
+  description = "slack webhook url"
+}
