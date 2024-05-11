@@ -1,0 +1,11 @@
+route:
+  receiver: 'slack'
+  group_by: [alertname]
+
+receivers:
+  - name: 'slack'
+    slack_configs:
+      - send_resolved: true
+        username: 'Alertmanager'
+        channel: 'workflow-ochestration'
+        api_url: {{ slack_webhook }}

@@ -1,0 +1,14 @@
+apiVersion: 1
+
+datasources:
+- name: Prometheus-Filecoin
+  type: prometheus
+  access: proxy
+  orgId: 1
+  url: http://{{ monitor_host }}:9090
+
+- name: Loki-Filecoin
+  type: loki
+  access: proxy
+  orgId: 1
+  url: http://{{ monitor_host }}:3100

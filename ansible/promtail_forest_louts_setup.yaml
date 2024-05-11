@@ -1,0 +1,35 @@
+- name: Install Promptail using Docker
+  hosts: all
+  become: yes
+  tasks:
+    - name: Create a promtail directory
+      ansible.builtin.file:
+        path: /home/ubuntu/promtail
+        state: directory
+    
+    - name: Create promtail-config.yaml from template
+      template:
+        src: ./promtail/promtail-config.yaml.j2
+        dest: /home/ubuntu/promtail/promtail-config.yaml
+      vars:
+        test_label: "{{ monitor_host }}"
+    
+          
+    - name: Pull Promptail Docker image
+      docker_image:
+        name: grafana/promtail:main
+        source: pull
+
+    - name: Run Promptail container
+      docker_container:
+        name: promptail
+        image: grafana/promtail:main
+        volumes:
+          - /var/log:/var/log
+          - /home/ubuntu/promtail:/etc/promtail
+          - /var/log/journal/:/var/log/journal/
+        command: -config.file=/etc/promtail/promtail-config.yaml
+        state: started
+        restart_policy: always
+        published_ports:
+          - "9080:9080"

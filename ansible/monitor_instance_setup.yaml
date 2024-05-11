@@ -1,0 +1,103 @@
+---
+- name: Install Docker Compose and run Docker Compose file
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Install prerequisites for Docker Compose
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg-agent
+          - software-properties-common
+      
+
+    - name: Add Docker's official GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+      
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable
+        state: present
+      
+
+    - name: Install Docker Compose
+      apt:
+        name: docker-compose
+        state: present
+      
+
+    - name: Copy Docker Compose file
+      copy:
+        src: ./docker-compose.yaml
+        dest: /home/ubuntu/docker-compose.yml
+      
+
+    - name: Create a prometheus directory
+      ansible.builtin.file:
+        path: /home/ubuntu/prometheus
+        state: directory
+
+    - name: Create a loki directory
+      ansible.builtin.file:
+        path: /home/ubuntu/loki
+        state: directory
+
+    - name: Create a Grafana directory
+      ansible.builtin.file:
+        path: /home/ubuntu/grafana
+        state: directory 
+
+    - name: Create alertmnager directory
+      ansible.builtin.file:
+        path: /home/ubuntu/alertmanager
+        state: directory 
+    
+    - name: Create loki-config.yaml from template
+      template:
+        src: ./loki/loki-config.yaml.j2
+        dest: /home/ubuntu/loki/loki-config.yaml
+      vars:
+        s3_region: "{{ s3_region }}"
+        bucket_name: "{{ s3_bucket_name }}"
+      
+
+    - name: Copy prometheus Rules file
+      copy:
+        src: ./prometheus/rules.yaml
+        dest: /home/ubuntu/prometheus/rules.yaml
+
+    - name: Create prometheus-config.yaml from template
+      template:
+        src: ./prometheus/prometheus-config.yaml.j2
+        dest: /home/ubuntu/prometheus/prometheus-config.yaml
+      vars:
+        forsest_node_ip: "{{ forsest_node_ip }}"
+        lotus_node_ip: "{{ lotus_node_ip }}"
+        monitor_host: "{{ monitor_host }}"
+
+    - name: Create datasource.yaml from template
+      template:
+        src: ./grafana/datasources.yaml.j2
+        dest: /home/ubuntu/grafana/datasources.yaml
+      vars:
+        monitor_host: "{{ monitor_host }}"
+
+    - name: Create alertmanager-config.yaml from template
+      template:
+        src: ./alertmanager/alertmanager-config.yaml.j2
+        dest: /home/ubuntu/alertmanager/alertmanager-config.yaml
+      vars:
+        slack_webhook: "{{ slack_webhook }}"
+      
+    
+    - name: Run Docker Compose
+      command: docker-compose up -d
+      args:
+        chdir: /home/ubuntu/
+      

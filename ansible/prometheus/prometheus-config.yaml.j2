@@ -1,0 +1,22 @@
+global:
+  scrape_interval: 1m
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+  - job_name: 'node-forest'
+    static_configs:
+      - targets: ['{{ forsest_node_ip }}:9100']
+  - job_name: 'node-lotus'
+    static_configs:
+      - targets: ['{{ lotus_node_ip }}:9100']
+
+rule_files:
+  - /etc/prometheus/rules.yaml
+
+alerting:
+  alertmanagers:
+    - scheme: http
+      static_configs:
+        - targets: [ '{{ monitor_host }}:9093' ]

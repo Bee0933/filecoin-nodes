@@ -1,5 +1,5 @@
 ---
-- name: Install Docker for Forest instance
+- name: Install Docker for Nginx instance
   hosts: all
   become: yes
   tasks:
@@ -60,46 +60,36 @@
         state: present
 
 
-- name: Install Forest container
+- name: Configure NGINX Docker container as reverse proxy
   hosts: all
-  become: yes
+  gather_facts: false
+  become: true
+
   tasks:
-    - name: Start Forest container
-      docker_container:
-        name: forest
-        image: ghcr.io/chainsafe/forest:latest
-        state: started
-        detach: yes
-        init: yes
-        auto_remove: no
-        command: "--chain calibnet --auto-download-snapshot --encrypt-keystore false"
-
-- name: Deploy node_exporter container
-  hosts: all
-  become: yes
-  tasks:
-    - name: Run node_exporter container
-      docker_container:
-        name: node_exporter
-        image: quay.io/prometheus/node-exporter:latest
-        command: "--path.rootfs=/host"
-        network_mode: host
-        pid_mode: host
-        restart_policy: unless-stopped
-        volumes:
-          - "/:/host:ro,rslave"
-
-
-# - name: Execute forest-cli net peers command in Docker container
-#   hosts: all
-#   become: yes
-#   vars:
-#     ansible_connection_timeout: 180
-#   tasks:
-#     - name: Execute command in Docker container
-#       command: docker exec -it forest forest-cli net peers
-#       register: command_output
+    - name: Create nginx directory
+      ansible.builtin.file:
+        path: /home/ubuntu/nginx
+        state: directory
       
-#     - name: Display command output
-#       debug:
-#         msg: "{{ command_output.stdout }}"
+    - name: Create nginx proxy conf from template
+      template:
+        src: ./nginx/reverse-proxy.conf.j2
+        dest: /home/ubuntu/nginx/reverse-proxy.conf
+      vars:
+        server_ip: "{{ monitor_host }}"
+
+    - name: Pull NGINX Docker image
+      docker_image:
+        name: nginx:latest
+        source: pull
+        state: present
+
+    - name: Run NGINX Docker container
+      docker_container:
+        name: nginx
+        image: nginx:latest
+        ports:
+          - "80:80"
+        volumes:
+          - ./nginx/reverse-proxy.conf:/etc/nginx/conf.d/default.conf
+        state: started

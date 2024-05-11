@@ -101,22 +101,3 @@
         restart_policy: unless-stopped
         volumes:
           - "/:/host:ro,rslave"
-
-
-- name: Install Promptail using Docker
-  hosts: all
-  become: yes
-  tasks:
-    - name: Pull Promptail Docker image
-      docker_image:
-        name: grafana/promtail:main
-        source: pull
-
-    - name: Run Promptail container
-      docker_container:
-        name: promptail
-        image: grafana/promtail:main
-        state: started
-        restart_policy: always
-        env:
-          CLIENT_URL: "{{ loki_address }}"
