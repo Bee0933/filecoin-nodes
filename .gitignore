@@ -25,4 +25,5 @@ t.
 outputs.tf
 test.txt
 test.yaml
+errored.tfstate
 
