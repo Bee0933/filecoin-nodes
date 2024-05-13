@@ -1,0 +1,69 @@
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  ansible:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Setup Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.11'
+
+    - name: Install Ansible
+      run: |
+        python -m pip install --upgrade pip
+        pip install ansible
+
+  terraform:
+    name: "Terraform"
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    defaults:
+      run:
+        working-directory: src
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Create .pem file
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ansible-filecoin.pem
+          chmod 400 ansible-filecoin.pem
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: 1.0.1
+          terraform_wrapper: false
+
+      - name: Terraform Format
+        id: fmt
+        run: terraform fmt -check
+
+      - name: Terraform Init
+        id: init
+        run: terraform init
+
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -no-color
+
+      - name: Terraform Apply
+        run: |
+          terraform apply \
+            -auto-approve \
+            -var 'ssh-private-key-path=ansible-filecoin.pem' \
+            -var 'aws-region=us-east-1' \
+            -var 'azs=["us-east-1a", "us-east-1b", "us-east-1c"]'
+            -var 'key-name=ansible-filecoin' \
+            -var 'ssh-user=${{ secrets.SSH_USER }}' \
+            -var 'slack-webhook=${{ secrets.SLACK_WEBHOOK }}'

@@ -1,13 +1,13 @@
 # provider
 terraform {
 
-  # backend "s3" {
-  #   bucket         = "cc-tf-state-backend-ci-cd"
-  #   key            = "tf-infra/terraform.tfstate"
-  #   region         = "us-east-1"
-  #   dynamodb_table = "terraform-state-locking"
-  #   encrypt        = true
-  # }
+  backend "s3" {
+    bucket         = "filecoin-tf-state-backend"
+    key            = "tf-infra/terraform.tfstate"
+    region         = "us-east-1"
+    dynamodb_table = "terraform-state-locking"
+    encrypt        = true
+  }
 
   required_providers {
     aws = {
@@ -21,7 +21,7 @@ provider "aws" {
   region = var.aws-region
 }
 
-# module "tf-state" {
-#   source      = "./modules/tf-state"
-#   bucket_name = "cc-tf-state-backend-ci-cd"
-# }
+module "tf-state" {
+  source      = "./modules/tf-state"
+  bucket_name = "filecoin-tf-state-backend"
+}
