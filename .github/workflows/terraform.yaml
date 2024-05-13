@@ -27,6 +27,7 @@ jobs:
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      
     defaults:
       run:
         working-directory: terraform
@@ -45,6 +46,15 @@ jobs:
           terraform_version: 1.0.1
           terraform_wrapper: false
 
+      - name: Create terraform.tfvars
+        run: |
+          echo "ssh-private-key-path=\"ansible-filecoin.pem\"" > terraform.tfvars
+          echo "aws-region=\"us-east-1\"" >> terraform.tfvars
+          echo "azs=[\"us-east-1a\", \"us-east-1b\", \"us-east-1c\"]" >> terraform.tfvars
+          echo "key-name=\"ansible-filecoin\"" >> terraform.tfvars
+          echo "ssh-user=\"${{ secrets.SSH_USER }}\"" >> terraform.tfvars
+          echo "slack-webhook=\"${{ secrets.SLACK_WEBHOOK }}\"" >> terraform.tfvars
+
       - name: Terraform Format
         id: fmt
         run: terraform fmt -check
@@ -61,9 +71,4 @@ jobs:
         run: |
           terraform apply \
             -auto-approve \
-            -var 'ssh-private-key-path=ansible-filecoin.pem' \
-            -var 'aws-region=us-east-1' \
-            -var 'azs=["us-east-1a", "us-east-1b", "us-east-1c"]'
-            -var 'key-name=ansible-filecoin' \
-            -var 'ssh-user=${{ secrets.SSH_USER }}' \
-            -var 'slack-webhook=${{ secrets.SLACK_WEBHOOK }}'
+           
