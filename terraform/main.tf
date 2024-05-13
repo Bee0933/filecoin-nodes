@@ -68,7 +68,7 @@ resource "aws_instance" "monitoring-instance" {
 
 # IAM instance profile for Monitoring Nodes ( S3 Access )
 resource "aws_iam_instance_profile" "monitior-instance-s3-profile" {
-  name = "MonitiorInstanceS3Profile"
+  name = "MonitiorNodeInstanceS3Profile"
   role = aws_iam_role.monitior-instance-s3-role.name
 }
 
