@@ -21,7 +21,7 @@ provider "aws" {
   region = var.aws-region
 }
 
-module "tf-state" {
-  source      = "./modules/tf-state"
-  bucket_name = "filecoin-tf-state-backend"
-}
+# module "tf-state" {
+#   source      = "./modules/tf-state"
+#   bucket_name = "filecoin-tf-state-backend"
+# }
