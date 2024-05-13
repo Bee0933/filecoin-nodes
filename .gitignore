@@ -24,3 +24,5 @@ terraform.rc
 t.
 outputs.tf
 test.txt
+test.yaml
+

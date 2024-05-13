@@ -25,8 +25,8 @@ resource "aws_instance" "lotus-instance" {
   ami           = "ami-0eac975a54dfee8cb" # use ubuntu arm 
   instance_type = "t4g.2xlarge"
   # availability_zone = "us-east-1b"
-  subnet_id     = module.vpc.public_subnets[0]
-  key_name      = var.key-name
+  subnet_id = module.vpc.public_subnets[0]
+  key_name  = var.key-name
 
   tags = {
     Name = "lotus-instance"
@@ -73,7 +73,7 @@ resource "aws_iam_instance_profile" "monitior-instance-s3-profile" {
 }
 
 resource "aws_iam_role" "monitior-instance-s3-role" {
-  name               = "monitior-instance-s3-role"
+  name = "monitior-instance-s3-role"
   assume_role_policy = jsonencode({
     "Version" : "2012-10-17",
     "Statement" : [
@@ -97,7 +97,7 @@ resource "aws_iam_role_policy_attachment" "s3_access" {
 # S3 Bucket for monitoring instance
 resource "aws_s3_bucket" "fil-monitoring-s3-bucket" {
   bucket = "fil-monitoring-s3-bucket"
-  
+
   tags = {
     Name = "fil-monitoring-s3-bucket"
   }
@@ -106,9 +106,9 @@ resource "aws_s3_bucket" "fil-monitoring-s3-bucket" {
 
 # Nginx Reverse Proxy Instance
 resource "aws_instance" "nginx-instance" {
-  ami                = "ami-080e1f13689e07408"
-  instance_type      = "t3.micro"
-  subnet_id          = module.vpc.public_subnets[1]
+  ami           = "ami-080e1f13689e07408"
+  instance_type = "t3.micro"
+  subnet_id     = module.vpc.public_subnets[1]
   key_name      = var.key-name
 
   tags = {
@@ -142,7 +142,7 @@ resource "null_resource" "configure-servers" {
 
   provisioner "local-exec" {
     working_dir = "../ansible"
-    command = "ansible-playbook  --inventory ${aws_instance.forest-instance.public_ip}, --private-key ${var.ssh-private-key-path} --user ubuntu  forest_setup.yaml --extra-vars 'monitor_host=${aws_instance.monitoring-instance.public_ip}'"
+    command     = "ansible-playbook  --inventory ${aws_instance.forest-instance.public_ip}, --private-key ${var.ssh-private-key-path} --user ubuntu  forest_setup.yaml --extra-vars 'monitor_host=${aws_instance.monitoring-instance.public_ip}'"
   }
 
   # lotus instance
@@ -159,7 +159,7 @@ resource "null_resource" "configure-servers" {
 
   provisioner "local-exec" {
     working_dir = "../ansible"
-    command = "ansible-playbook  --inventory ${aws_instance.lotus-instance.public_ip}, --private-key ${var.ssh-private-key-path} --user ubuntu  lotus_setup.yaml --extra-vars 'monitor_host=${aws_instance.monitoring-instance.public_ip}'"
+    command     = "ansible-playbook  --inventory ${aws_instance.lotus-instance.public_ip}, --private-key ${var.ssh-private-key-path} --user ubuntu  lotus_setup.yaml --extra-vars 'monitor_host=${aws_instance.monitoring-instance.public_ip}'"
   }
 
 
@@ -177,7 +177,7 @@ resource "null_resource" "configure-servers" {
 
   provisioner "local-exec" {
     working_dir = "../ansible"
-    command = "ansible-playbook  --inventory ${aws_instance.monitoring-instance.public_ip}, --private-key ${var.ssh-private-key-path} --user ubuntu  monitor_instance_setup.yaml --extra-vars 'monitor_host=${aws_instance.monitoring-instance.public_ip} slack_webhook=${var.slack-webhook} s3_bucket_name=${aws_s3_bucket.fil-monitoring-s3-bucket.bucket} s3_region=${var.aws-region} forsest_node_ip=${aws_instance.forest-instance.public_ip} lotus_node_ip=${aws_instance.lotus-instance.public_ip}'"
+    command     = "ansible-playbook  --inventory ${aws_instance.monitoring-instance.public_ip}, --private-key ${var.ssh-private-key-path} --user ubuntu  monitor_instance_setup.yaml --extra-vars 'monitor_host=${aws_instance.monitoring-instance.public_ip} slack_webhook=${var.slack-webhook} s3_bucket_name=${aws_s3_bucket.fil-monitoring-s3-bucket.bucket} s3_region=${var.aws-region} forsest_node_ip=${aws_instance.forest-instance.public_ip} lotus_node_ip=${aws_instance.lotus-instance.public_ip}'"
   }
 
 
@@ -195,7 +195,7 @@ resource "null_resource" "configure-servers" {
 
   provisioner "local-exec" {
     working_dir = "../ansible"
-    command = "ansible-playbook  --inventory ${aws_instance.forest-instance.public_ip}, --private-key ${var.ssh-private-key-path} --user ubuntu  promtail_forest_louts_setup.yaml --extra-vars 'monitor_host=${aws_instance.monitoring-instance.public_ip}'"
+    command     = "ansible-playbook  --inventory ${aws_instance.forest-instance.public_ip}, --private-key ${var.ssh-private-key-path} --user ubuntu  promtail_forest_louts_setup.yaml --extra-vars 'monitor_host=${aws_instance.monitoring-instance.public_ip}'"
   }
 
 
@@ -214,7 +214,7 @@ resource "null_resource" "configure-servers" {
 
   provisioner "local-exec" {
     working_dir = "../ansible"
-    command = "ansible-playbook  --inventory ${aws_instance.lotus-instance.public_ip}, --private-key ${var.ssh-private-key-path} --user ubuntu  promtail_forest_louts_setup.yaml --extra-vars 'monitor_host=${aws_instance.monitoring-instance.public_ip}'"
+    command     = "ansible-playbook  --inventory ${aws_instance.lotus-instance.public_ip}, --private-key ${var.ssh-private-key-path} --user ubuntu  promtail_forest_louts_setup.yaml --extra-vars 'monitor_host=${aws_instance.monitoring-instance.public_ip}'"
   }
 
 
@@ -233,7 +233,7 @@ resource "null_resource" "configure-servers" {
 
   provisioner "local-exec" {
     working_dir = "../ansible"
-    command = "ansible-playbook  --inventory ${aws_instance.nginx-instance.public_ip}, --private-key ${var.ssh-private-key-path} --user ubuntu  setup_nginx.yaml --extra-vars 'monitor_host=${aws_instance.monitoring-instance.public_ip}'"
+    command     = "ansible-playbook  --inventory ${aws_instance.nginx-instance.public_ip}, --private-key ${var.ssh-private-key-path} --user ubuntu  setup_nginx.yaml --extra-vars 'monitor_host=${aws_instance.monitoring-instance.public_ip}'"
   }
 
 }

@@ -1,10 +1,3 @@
-
-variable "aws-cred-profile" {
-  type        = string
-  default     = ""
-  description = "AWS Credentials Profile"
-}
-
 variable "aws-region" {
   type        = string
   default     = "us-east-1"
@@ -12,8 +5,7 @@ variable "aws-region" {
 }
 
 variable "azs" {
-  type    = list(string)
-  default = ["us-east-1a"]  
+  type = list(string)
 }
 
 variable "ssh-private-key-path" {
@@ -22,19 +14,19 @@ variable "ssh-private-key-path" {
   description = "Path to private key for ansible connection"
 }
 
-variable ssh-user {
+variable "ssh-user" {
   type        = string
   default     = "ubuntu"
   description = "description"
 }
 
-variable key-name {
+variable "key-name" {
   type        = string
   default     = "ansible-filecoin"
   description = "description"
 }
 
-variable slack-webhook {
+variable "slack-webhook" {
   type        = string
   default     = ""
   description = "slack webhook url"
