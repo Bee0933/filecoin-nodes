@@ -61,7 +61,7 @@ create `terraform.tfvars` file in `/terraform` directory for terraform variables
 
 *use `make help` make usage and description*
 
-## check states and connection of Filecoin Nodes on the Calibration Network (calibnet)
+### check states and connection of Filecoin Nodes on the Calibration Network (calibnet)
 To do this we have to SSH into the instances
 
 - Forest Instance <br>
