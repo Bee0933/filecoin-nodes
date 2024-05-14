@@ -22,7 +22,7 @@ override.tf.json
 terraform.rc
 
 t.
-outputs.tf
+# outputs.tf
 test.txt
 test.yaml
 errored.tfstate
